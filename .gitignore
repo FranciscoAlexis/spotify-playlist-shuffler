@@ -1,0 +1,3 @@
+web-api-auth-examples/
+*.DS_Store
+/node_modules/

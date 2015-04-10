@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Spotify Playlist Shuffler</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <style type="text/css">
+      #login, #loggedin {
+        display: none;
+      }
+      .text-overflow {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 500px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div id="login">
+        <h1>Please, log in to use the Spotify Playlist Shuffler</h1>
+        <a href="/login" class="btn btn-primary">Log in with Spotify</a>
+      </div>
+      <div id="loggedin">
+        <div id="user-profile">
+        </div>
+        <div id="user-playlists">
+          <p>Getting Playlists...</p>
+        </div>
+      </div>
+    </div>
+
+    <script id="user-profile-template" type="text/x-handlebars-template">
+      <h1>Welcome {{display_name}}</h1>
+      <div class="media">
+        <div class="pull-left">
+          <img class="media-object" width="150" src="{{images.0.url}}" />
+        </div>
+      </div>
+    </script>
+
+    <script id="user-playlists-template" type="text/x-handlebars-template">
+      <h2>Available Playlists</h2>
+          {{#list items}}{{name}} </td><td><button class="btn btn-primary" onclick="randomizePlaylist('{{id}}','{{name}}')">Randomize!</button>{{/list}}
+    </script>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="notify.min.js"></script>
+    <script>
+      var userId = '';
+      var accessToken = '';
+
+      function randomizePlaylist(playlistId,name){
+          $.notify("Processing playlist -" + name +"-",'info');
+          $.ajax({
+              url: '/randomize/'+ userId +'/'+ playlistId +'/'+accessToken,
+              success: function() {
+                $.notify(":) Playlist -"+name+ "- successfully randomized",'success');
+              },
+              error: function(jqXHR, textStatus, errorThrown){
+                $.notify(":( Error processing playlist -" + name + "-",'error');
+              }
+          });
+      }
+
+      (function() {
+
+        /**
+         * Obtains parameters from the hash of the URL
+         * @return Object
+         */
+        function getHashParams() {
+          var hashParams = {};
+          var e, r = /([^&;=]+)=?([^&;]*)/g,
+              q = window.location.hash.substring(1);
+          while ( e = r.exec(q)) {
+             hashParams[e[1]] = decodeURIComponent(e[2]);
+          }
+          return hashParams;
+        }
+
+        
+
+        Handlebars.registerHelper('list', function(items, options) {
+          var out = "<table class='table table-condensed table-striped'><tbody>";
+
+          for(var i=0, l=items.length; i<l; i++) {
+            out = out + "<tr><td>" + options.fn(items[i]) + "</td></tr>";
+          }
+
+          return out + "</tbody></table>";
+        });
+
+        var userProfileSource       = document.getElementById('user-profile-template').innerHTML,
+            userProfileTemplate     = Handlebars.compile(userProfileSource),
+            userProfilePlaceholder  = document.getElementById('user-profile');
+
+        var playlistsSource   = document.getElementById('user-playlists-template').innerHTML,
+        playlistsTemplate     = Handlebars.compile(playlistsSource),
+        playlistsPlaceholder  = document.getElementById('user-playlists');
+
+        var params = getHashParams();
+
+        var access_token  = params.access_token,
+            refresh_token = params.refresh_token,
+            playlists     = params.playlists,
+            error         = params.error;
+
+        accessToken = access_token;
+
+        if (error) {
+          alert('There was an error during the authentication');
+        } else {
+          if (access_token) {
+
+            $.ajax({
+                url: 'https://api.spotify.com/v1/me',
+                headers: {
+                  'Authorization': 'Bearer ' + access_token
+                },
+                success: function(response) {
+                  userProfilePlaceholder.innerHTML = userProfileTemplate(response);
+
+                  $('#login').hide();
+                  $('#loggedin').show();
+
+                  userId = response.id;
+
+                  $.ajax({
+                      url: 'https://api.spotify.com/v1/users/'+ response.id +'/playlists?limit=50&offset=0', //TODO support pagination
+                      headers: {
+                        'Authorization': 'Bearer ' + access_token
+                      },
+                      success: function(playListresponse) {
+                        playlistsPlaceholder.innerHTML = playlistsTemplate(playListresponse);
+                      }
+                  });
+                }
+            });
+          } else {
+              // render initial screen
+              $('#login').show();
+              $('#loggedin').hide();
+          }
+        }
+
+      })();
+    </script>
+</html>
+
