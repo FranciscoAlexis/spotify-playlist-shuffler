@@ -22,6 +22,6 @@ This is an App that shuffles your playlist so you don't need to use the shuffle 
 
  # Known bugs
  - After shuffling a playlist it may have more tracks... because of reasons
- - If you have more than 50 playlists you may not see them all
+ - If you have more than 50 playlists you may not see all of them
 
 
