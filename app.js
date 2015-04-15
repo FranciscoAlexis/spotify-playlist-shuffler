@@ -237,7 +237,7 @@ app.get('/randomize/:userId/:playlistId/:access_token', function(req, res) {
                             },
                             json: true
                           };  
-                          request.post(putOptions,function(error,response,body){
+                          request.post(postOptions,function(error,response,body){
                             if (!error && response.statusCode === 201) {
                               tracksputted+=off;
                                off = shuffeledTracks.length - tracksputted > 100 ? 100 : shuffeledTracks.length - tracksputted;
